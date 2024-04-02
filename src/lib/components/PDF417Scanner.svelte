@@ -10,6 +10,7 @@
 	export let previewWidth = 640;
 	export let previewHeight = 480;
 	export let previewIntervalTime: number = 500;
+	export let onImageCapture: (image: ImageData) => void;
 
 	let stream: MediaStream | null;
 	let devices: MediaDeviceInfo[] = [];
@@ -44,16 +45,34 @@
 		}
 	});
 
+	async function holdStillWhileWeCapture() {
+		stopWatching();
+		const ctx = previewCanvas && previewCanvas.getContext('2d');
+		if (ctx) {
+			ctx.fillText('Hold still while we capture', 10, 10);
+		}
+		setTimeout(() => {
+			startWatching();
+		}, 1000);
+	}
+
 	// Handler for the worker internally
 	let imgProcessMessageHandler = async (e: MessageEvent<any>) => {
 		if (!e.data) return;
 		switch (e.data.msg) {
 			case 'debug': {
-				writePreviewFrame(e.data.imageData);
+				// writePreviewFrame(e.data.imageData);
 				break;
 			}
 			case 'processImage': {
 				foundPdf417 = e.data.found;
+				if (foundPdf417) {
+					const image = getVideoImage();
+					if (image) {
+						await holdStillWhileWeCapture();
+						onImageCapture(image);
+					}
+				}
 				break;
 			}
 			case 'error': {

@@ -1,17 +1,46 @@
 <script lang="ts">
-	import Fullscreen from '$lib/components/Fullscreen.svelte';
 	import Pdf417Scanner from '$lib/components/PDF417Scanner.svelte';
 
+	type LicenseFace = 'front' | 'back' | 'none';
+	type LicenseImage = {
+		front: File;
+		back: File;
+	};
+
 	let cameraOpen = true;
+	let licenseImage = {} as LicenseImage;
+	let whichFace: LicenseFace = 'front';
 
 	const toggleCamera = () => {
 		cameraOpen = !cameraOpen;
 	};
+
+	function onImageCapture(image: ImageData) {
+		//
+		let buf = Buffer.from(image.data.buffer);
+		let blob = new Blob([buf]);
+		if (whichFace === 'front') {
+			let file = new File([blob], 'front.jpg', { type: 'image/jpeg' });
+			licenseImage.front = file;
+			whichFace = 'back';
+		} else {
+			let file = new File([blob], 'front.jpg', { type: 'image/jpeg' });
+			licenseImage.back = file;
+			whichFace = 'none';
+			uploadLicense();
+		}
+	}
+
+	function uploadLicense() {
+		// this is where you set the upload logic to the server
+		console.log('Uploading license', licenseImage);
+		setTimeout(function () {
+			console.log('Uploaded license', licenseImage);
+		}, 1000);
+	}
 </script>
 
-<!-- <Fullscreen on:message={handleMessage} let:onRequest let:onExit>
-	<Pdf417Scanner />
-</Fullscreen> -->
+<!-- <pre><code>{JSON.stringify(licenseImage, null, 2)}</code></pre> -->
 
 <!-- <Fullscreen let:onRequest let:onExit on:fullscreen={handleMessage}> -->
 {#if !cameraOpen}
@@ -22,7 +51,15 @@
 {/if}
 {#if cameraOpen}
 	<button on:click={toggleCamera}>Close</button>
-	<Pdf417Scanner />
+	{#if whichFace === 'none'}
+		<h3>Uploading...</h3>
+	{:else if whichFace === 'front'}
+		<h3>Scan the front of your license</h3>
+		<Pdf417Scanner {onImageCapture} />
+	{:else}
+		<h3>Scan the back of your license</h3>
+		<Pdf417Scanner {onImageCapture} />
+	{/if}
 {/if}
 
 <!-- </Fullscreen> -->

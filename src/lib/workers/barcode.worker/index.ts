@@ -1,8 +1,8 @@
-import { MatVector, type Mat, type Rect, type RotatedRect, Size } from "@techstark/opencv-js";
+import { MatVector, type Mat, type Rect, type RotatedRect, Size } from '@techstark/opencv-js';
 import cv, { boundingRect } from '@techstark/opencv-js';
 
-const CARD_MAX_AREA = 20000
-const CARD_MIN_AREA = 800
+const CARD_MAX_AREA = 20000;
+const CARD_MIN_AREA = 800;
 
 onmessage = async function (e: MessageEvent) {
 	switch (e.data.msg) {
@@ -29,7 +29,7 @@ async function processImage({ msg, data }: any) {
 	let { image: workingImage, size } = resizeImage(img, 200);
 	workingImage = preprocessImage(workingImage);
 	// postMessage({ msg: 'debug', imageData: imageDataFromMat(workingImage) });
-	let result = findCard(workingImage, size, CARD_MIN_AREA, CARD_MAX_AREA);
+	const result = findCard(workingImage, size, CARD_MIN_AREA, CARD_MAX_AREA);
 	// postMessage({ msg: 'debug', imageData: imageDataFromMat(workingImage) });
 	if (result.fourPoints !== null) {
 		postMessage({ msg, found: true });
@@ -53,19 +53,27 @@ function preprocessImage(src: Mat) {
 
 	// Enhance details
 	let enhanced = enhanceDetails(src);
-	
+
 	// Convert to grayscale
 	cv.cvtColor(enhanced, gray, cv.COLOR_BGR2GRAY);
-	
+
 	// Apply Gaussian Blur
 	cv.GaussianBlur(gray, blur, new cv.Size(5, 5), 0, 0, cv.BORDER_DEFAULT);
-	
+
 	// Detect edges
 	cv.Canny(blur, edges, 75, 200);
-	
+
 	// Dilate
-	cv.dilate(edges, dilate, kernel, new cv.Point(-1, -1), 1, cv.BORDER_CONSTANT, cv.morphologyDefaultBorderValue());
-	
+	cv.dilate(
+		edges,
+		dilate,
+		kernel,
+		new cv.Point(-1, -1),
+		1,
+		cv.BORDER_CONSTANT,
+		cv.morphologyDefaultBorderValue()
+	);
+
 	// Apply Morphological Closing
 	cv.morphologyEx(dilate, closing, cv.MORPH_CLOSE, kernel);
 
@@ -98,13 +106,17 @@ function enhanceDetails(src: Mat) {
 	return sharpened;
 }
 
-
 interface FindCardResult {
 	fourPoints: cv.Mat | null;
 	threshImgColor: cv.Mat | null;
 }
 
-function findCard(threshImg: cv.Mat, size: cv.Size, CARD_MIN_AREA: number, CARD_MAX_AREA: number): FindCardResult {
+function findCard(
+	threshImg: cv.Mat,
+	size: cv.Size,
+	CARD_MIN_AREA: number,
+	CARD_MAX_AREA: number
+): FindCardResult {
 	let contours = new cv.MatVector();
 	let hierarchy = new cv.Mat();
 
@@ -116,8 +128,9 @@ function findCard(threshImg: cv.Mat, size: cv.Size, CARD_MIN_AREA: number, CARD_
 	}
 
 	// Sort contours by area in descending order
-	let indexSort = Array.from(Array(contours.size()).keys())
-		.sort((a, b) => cv.contourArea(contours.get(b)) - cv.contourArea(contours.get(a)));
+	let indexSort = Array.from(Array(contours.size()).keys()).sort(
+		(a, b) => cv.contourArea(contours.get(b)) - cv.contourArea(contours.get(a))
+	);
 
 	let fourPoints: cv.Mat | null = null;
 	let threshImgColor = new cv.Mat();
@@ -130,7 +143,12 @@ function findCard(threshImg: cv.Mat, size: cv.Size, CARD_MIN_AREA: number, CARD_
 		let approx = new cv.Mat();
 		cv.approxPolyDP(cnt, approx, 0.02 * peri, true); // Adjusted approximation factor for better accuracy
 
-		if (contourArea > CARD_MIN_AREA && contourArea < CARD_MAX_AREA && approx.rows === 4 && hierarchy.data32S[indexSort[i] * 4 + 3] === -1) {
+		if (
+			contourArea > CARD_MIN_AREA &&
+			contourArea < CARD_MAX_AREA &&
+			approx.rows === 4 &&
+			hierarchy.data32S[indexSort[i] * 4 + 3] === -1
+		) {
 			fourPoints = approx;
 			cv.drawContours(threshImgColor, contours, indexSort[i], new cv.Scalar(255, 0, 0), 8);
 			postMessage({ msg: 'debug', imageData: imageDataFromMat(threshImgColor) });
@@ -145,18 +163,16 @@ function findCard(threshImg: cv.Mat, size: cv.Size, CARD_MIN_AREA: number, CARD_
 	return { fourPoints, threshImgColor };
 }
 
-
 function resizeImage(src: Mat, width = 500) {
 	// Assuming 'src' is an already loaded cv.Mat image
 	let dst = new cv.Mat();
-	let size = new cv.Size(width, Math.round(src.rows * width / src.cols));
+	let size = new cv.Size(width, Math.round((src.rows * width) / src.cols));
 
 	// Resize the image
 	cv.resize(src, dst, size, 0, 0, cv.INTER_LINEAR);
 
 	return { image: dst, size: size };
 }
-
 
 export function imageDataFromMat(mat: Mat) {
 	// converts the mat type to cv.CV_8U
@@ -183,4 +199,3 @@ export function imageDataFromMat(mat: Mat) {
 	const clampedArray = new ImageData(new Uint8ClampedArray(img.data), img.cols, img.rows);
 	return clampedArray;
 }
-
