@@ -45,14 +45,13 @@
 		}
 	});
 
-	async function holdStillWhileWeCapture() {
-		stopWatching();
-		const ctx = previewCanvas && previewCanvas.getContext('2d');
-		if (ctx) {
-			ctx.fillText('Hold still while we capture', 10, 10);
-		}
+	async function holdStillWhileWeCapture(image: ImageData) {
 		setTimeout(() => {
-			startWatching();
+			stopWatching();
+			setTimeout(() => {
+				onImageCapture(image);
+				startWatching();
+			}, 2000);
 		}, 1000);
 	}
 
@@ -69,8 +68,7 @@
 				if (foundPdf417) {
 					const image = getVideoImage();
 					if (image) {
-						await holdStillWhileWeCapture();
-						onImageCapture(image);
+						await holdStillWhileWeCapture(image);
 					}
 				}
 				break;

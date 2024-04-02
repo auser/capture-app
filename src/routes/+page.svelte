@@ -1,6 +1,8 @@
 <script lang="ts">
 	import Pdf417Scanner from '$lib/components/PDF417Scanner.svelte';
 	import { PUBLIC_UPLOAD_URL } from '$env/static/public';
+	import { browser } from '$app/environment';
+	import type { Buffer } from 'buffer';
 
 	type LicenseFace = 'front' | 'back' | 'none';
 	type LicenseImage = {
@@ -16,19 +18,22 @@
 		cameraOpen = !cameraOpen;
 	};
 
-	function onImageCapture(image: ImageData) {
-		//
-		let buf = Buffer.from(image.data.buffer);
-		let blob = new Blob([buf]);
-		if (whichFace === 'front') {
+	function onImageCapture(buf: Buffer) {
+		if (browser) {
+			let blob = new Blob([buf]);
 			let file = new File([blob], 'front.jpg', { type: 'image/jpeg' });
-			licenseImage.front = file;
-			whichFace = 'back';
-		} else {
-			let file = new File([blob], 'front.jpg', { type: 'image/jpeg' });
-			licenseImage.back = file;
-			whichFace = 'none';
-			uploadLicense();
+			if (whichFace === 'front') {
+				licenseImage.front = file;
+				whichFace = 'back';
+				setTimeout(() => {
+					whichFace = 'back';
+				}, 2000);
+			} else {
+				let file = new File([blob], 'front.jpg', { type: 'image/jpeg' });
+				licenseImage.back = file;
+				whichFace = 'none';
+				uploadLicense();
+			}
 		}
 	}
 
