@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Pdf417Scanner from '$lib/components/PDF417Scanner.svelte';
+	import { PUBLIC_UPLOAD_URL } from '$env/static/public';
 
 	type LicenseFace = 'front' | 'back' | 'none';
 	type LicenseImage = {
@@ -33,7 +34,7 @@
 
 	function uploadLicense() {
 		// this is where you set the upload logic to the server
-		console.log('Uploading license', licenseImage);
+		console.log('Uploading license to', PUBLIC_UPLOAD_URL);
 		setTimeout(function () {
 			console.log('Uploaded license', licenseImage);
 		}, 1000);
