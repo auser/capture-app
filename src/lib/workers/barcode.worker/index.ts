@@ -31,8 +31,9 @@ async function processImage({ msg, data }: any) {
 	// postMessage({ msg: 'debug', imageData: imageDataFromMat(workingImage) });
 	const result = findCard(workingImage, size, CARD_MIN_AREA, CARD_MAX_AREA);
 	// postMessage({ msg: 'debug', imageData: imageDataFromMat(workingImage) });
+	const blur = detectBlur(workingImage);
 	if (result.fourPoints !== null) {
-		postMessage({ msg, found: true });
+		postMessage({ msg, found: true, blur });
 		result.threshImgColor?.delete();
 		result.fourPoints.delete();
 	} else {
@@ -41,6 +42,22 @@ async function processImage({ msg, data }: any) {
 
 	workingImage.delete();
 	img.delete();
+}
+
+function detectBlur(src: Mat) {
+	let lap_gray = new cv.Mat();
+	cv.Laplacian(src, lap_gray, cv.CV_64F, 1, 1, 0, cv.BORDER_DEFAULT);
+
+	let m = new cv.Mat(1, 4, cv.CV_64F);
+	let stddev = new cv.Mat(1, 4, cv.CV_64F);
+	cv.meanStdDev(lap_gray, m, stddev);
+
+	let sharpness = stddev.doubleAt(0, 0);
+
+	lap_gray.delete(); // Clean up
+	m.delete(); // Clean up
+	stddev.delete(); // Clean up
+	return sharpness;
 }
 
 function preprocessImage(src: Mat) {
